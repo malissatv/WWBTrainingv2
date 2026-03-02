@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DDM Content Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --orange: #f97316;
+    --orange-light: #fb923c;
+    --orange-dim: #7c3910;
+    --white: #f5f5f5;
+    --muted: #737373;
+    --muted-light: #a3a3a3;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+  h1 { font-family: 'Syne', sans-serif; }
+  .wrap { max-width: 680px; margin: 0 auto; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 36px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; margin-bottom: 16px;
+  }
+  .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+  .pill-text { font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; font-family: 'Syne', sans-serif; }
+  .title { font-size: 28px; font-weight: 900; color: var(--white); letter-spacing: -0.03em; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+
+  /* Steps */
+  .steps { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px; }
+  .step-line { width: 28px; height: 1px; background: var(--border); transition: background 0.3s; }
+  .step-line.done { background: var(--orange); }
+  .step-item { display: flex; align-items: center; gap: 6px; }
+  .step-circle {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    border: 2px solid var(--border); background: transparent; color: var(--muted);
+    transition: all 0.3s; font-family: 'Syne', sans-serif;
+  }
+  .step-circle.active { border-color: var(--orange); background: rgba(249,115,22,0.13); color: var(--orange); }
+  .step-circle.done { border-color: var(--orange); background: var(--orange); color: #000; }
+  .step-label { font-size: 12px; color: var(--muted); transition: color 0.3s; }
+  .step-label.active, .step-label.done { color: var(--white); font-weight: 600; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .card.orange-glow { border-color: rgba(249,115,22,0.2); }
+
+  /* Form */
+  .section-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; font-family: 'Syne', sans-serif; }
+  .section-desc { color: var(--muted); font-size: 13px; margin-top: 0; margin-bottom: 20px; }
+  label { display: block; font-size: 13px; color: var(--muted-light); margin-bottom: 6px; font-weight: 500; }
+  input, textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--white); padding: 10px 14px;
+    font-size: 14px; outline: none; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus { border-color: var(--orange); }
+  textarea { resize: vertical; min-height: 80px; }
+  .mb16 { margin-bottom: 16px; }
+  .mb24 { margin-bottom: 24px; }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--orange), var(--orange-light));
+    color: #000; font-size: 15px; font-weight: 800; border: none; cursor: pointer;
+    font-family: 'Syne', sans-serif; letter-spacing: 0.02em;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-secondary {
+    padding: 13px 20px; border-radius: 10px;
+    background: transparent; color: var(--muted); font-size: 14px;
+    font-weight: 600; border: 1px solid var(--border); cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-outline {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: transparent; color: var(--orange); font-size: 14px;
+    font-weight: 700; border: 1px solid rgba(249,115,22,0.27); cursor: pointer;
+    font-family: 'Syne', sans-serif; margin-top: 4px;
+    transition: background 0.2s;
+  }
+  .btn-outline:hover { background: rgba(249,115,22,0.07); }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn-primary { flex: 1; width: auto; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1px dashed var(--border); border-radius: 10px;
+    padding: 28px 20px; text-align: center; cursor: pointer;
+    margin-bottom: 20px; transition: border-color 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--orange); }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .upload-text span { color: var(--orange); }
+  .upload-sub { font-size: 12px; color: #404040; }
+
+  /* Thumbnails */
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .thumb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .thumb-count { font-size: 12px; color: var(--muted); }
+  .btn-add-more { font-size: 12px; color: var(--orange); background: none; border: 1px solid rgba(249,115,22,0.27); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-label { position: absolute; top: 2px; left: 2px; background: var(--orange); color: #000; font-size: 9px; font-weight: 800; border-radius: 4px; padding: 1px 5px; }
+  .thumb-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: #fff; border: none; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .thumb-add { width: 80px; height: 80px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 22px; flex-shrink: 0; transition: border-color 0.2s; }
+  .thumb-add:hover { border-color: var(--orange); }
+
+  /* Error */
+  .error { background: rgba(239,68,68,0.09); border: 1px solid var(--red); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px; }
+
+  /* Analysing */
+  .analysing { text-align: center; padding: 60px 20px; }
+  .analysing-icon { font-size: 36px; margin-bottom: 16px; }
+  .analysing-title { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 8px; font-family: 'Syne', sans-serif; }
+  .analysing-sub { color: var(--muted); font-size: 14px; }
+  .dots { display: flex; justify-content: center; gap: 6px; margin-top: 24px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); animation: pulse 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+
+  /* Results */
+  .results { display: flex; flex-direction: column; gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media(max-width:540px) { .grid2 { grid-template-columns: 1fr; } .grid3 { grid-template-columns: 1fr; } }
+
+  /* Score meter */
+  .score-wrap { display: flex; align-items: center; gap: 12px; }
+  .score-of { font-size: 13px; color: var(--muted); }
+  .score-verdict { margin-top: 10px; font-size: 14px; color: var(--muted-light); font-style: italic; }
+
+  /* Badge */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; font-family: 'Syne', sans-serif;
+  }
+
+  /* Check row */
+  .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .check-box { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .check-label { font-size: 13px; color: var(--muted-light); }
+
+  /* List items */
+  .list-item { display: flex; gap: 8px; margin-bottom: 8px; }
+  .list-icon { flex-shrink: 0; }
+  .list-text { font-size: 13px; color: var(--muted-light); }
+
+  /* Rewrite box */
+  .rewrite-box { background: rgba(249,115,22,0.07); border: 1px solid rgba(249,115,22,0.2); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+  .rewrite-label { font-size: 10px; font-weight: 700; color: var(--orange); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; font-family: 'Syne', sans-serif; }
+  .rewrite-text { font-size: 13px; color: var(--orange-light); }
+
+  /* Caption rewrite */
+  .caption-text { font-size: 14px; color: var(--orange-light); line-height: 1.7; white-space: pre-wrap; }
+
+  /* DDM tip */
+  .tip-row { display: flex; gap: 12px; align-items: flex-start; }
+  .tip-icon { font-size: 20px; }
+  .tip-label { font-size: 11px; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; font-family: 'Syne', sans-serif; }
+  .tip-text { font-size: 14px; color: var(--muted-light); }
+
+  /* Overall card top row */
+  .overall-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .funnel-right { text-align: right; }
+  .funnel-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .funnel-explanation { margin-top: 8px; font-size: 12px; color: var(--muted); max-width: 220px; text-align: right; }
+
+  p.card-desc { font-size: 13px; color: var(--muted-light); margin-top: 10px; margin-bottom: 0; }
+  p.card-desc-sm { font-size: 12px; color: var(--muted-light); margin-top: 8px; margin-bottom: 0; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="pill">
+      <div class="pill-dot"></div>
+      <span class="pill-text">Daily Demand Method</span>
+    </div>
+    <h1 class="title">Content Analyser</h1>
+    <p class="subtitle">Powered by Malissa at Client iQ</p>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps" id="steps">
+    <div class="step-item">
+      <div class="step-circle active" id="sc0">1</div>
+      <span class="step-label active" id="sl0">Context</span>
+    </div>
+    <div class="step-line" id="line0"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc1">2</div>
+      <span class="step-label" id="sl1">Content</span>
+    </div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc2">3</div>
+      <span class="step-label" id="sl2">Feedback</span>
+    </div>
+  </div>
+
+  <!-- INTAKE -->
+  <div id="screen-intake">
+    <div class="card">
+      <div class="section-title">Coach Context</div>
+      <p class="section-desc">This helps the analyser give targeted, relevant feedback.</p>
+      <div class="mb16">
+        <label>What's your niche?</label>
+        <input id="niche" type="text" placeholder="e.g. Fat loss coach for postpartum moms in their 30s" />
+      </div>
+      <div class="mb24">
+        <label>Describe your ideal avatar</label>
+        <textarea id="avatar" placeholder="e.g. High-achieving mom, 32-35, frustrated she's doing everything right but not losing fat..." style="min-height:80px"></textarea>
+      </div>
+      <button class="btn-primary" onclick="goToUpload()">Next →</button>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div id="screen-upload" class="hidden">
+    <div class="card">
+      <div class="section-title">Add Your Content</div>
+      <p class="section-desc">Paste your caption and/or upload images. For carousels, upload all slides in order.</p>
+      <textarea id="content" style="min-height:140px;margin-bottom:20px" placeholder="Paste your caption, hook, video script, or carousel copy here..."></textarea>
+      <input type="file" id="fileInput" accept="image/*" multiple class="hidden" />
+
+      <div id="upload-zone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📎</div>
+        <div class="upload-text">Upload images <span>(optional)</span></div>
+        <div class="upload-sub">Single post or multiple carousel slides</div>
+      </div>
+
+      <div id="thumb-area" class="hidden" style="margin-bottom:20px">
+        <div class="thumb-header">
+          <span class="thumb-count" id="thumb-count"></span>
+          <button class="btn-add-more" onclick="document.getElementById('fileInput').click()">+ Add more</button>
+        </div>
+        <div class="thumbs" id="thumbs-wrap"></div>
+      </div>
+
+      <div id="upload-error" class="error hidden"></div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goToIntake()">← Back</button>
+        <button class="btn-primary" onclick="analyse()">Analyse Content ⚡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYSING -->
+  <div id="screen-analysing" class="hidden">
+    <div class="card">
+      <div class="analysing">
+        <div class="analysing-icon">⚡</div>
+        <div class="analysing-title">Analysing your content...</div>
+        <div class="analysing-sub">Running it through the Daily Demand Method framework</div>
+        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="hidden">
+    <div class="results" id="results-wrap"></div>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are an expert content strategist trained on Kendall Strampel's Daily Demand Method (DDM).
+Analyse content submitted by coaches and give sharp, specific, actionable feedback grounded in the DDM framework.
+
+MESSAGING 101:
+The message is what people understand about what you do. It is the meaning people attach to you before they ever buy.
+Messaging is: the problem you solve, the kind of coach you are, the hills you die on, what makes you different, and what pisses you off about the industry.
+Strong messaging says the unfiltered version of the thing the audience is thinking but no one has said out loud.
+Simplicity rule: if it sounds like a medical journal, rewrite it. Say the thing simply and boldly.
+
+THE MISDIAGNOSIS FRAMEWORK:
+Clients misdiagnose their own problem. Show them what they THINK the problem is vs what it ACTUALLY is.
+Formula: You think ___ is the problem, but the real problem is ___.
+Examples:
+- You think you have a lead gen problem, you actually have an offer clarity problem
+- You think you need more motivation, you actually need higher standards
+- You think it is a fat loss problem, it is a relationship with your body problem
+- You think it is a consistency problem, it is a self-leadership problem
+
+CORE MESSAGE FORMATS:
+- I believe ___ is the real reason ___ stays stuck, and when you shift that, everything changes.
+- This is not about ___. It is about ___.
+- You do not need ___. You need ___.
+
+AVATAR CLARITY:
+Weak: women who want fat loss
+Strong: petite women who train consistently but cannot see results because they are dieting like they are 5ft10
+
+CONVICTION: Call them out, then create safety, then show the path.
+
+FUNNEL LAYERS:
+TOFU: Identity-led, emotion-forward, slightly confronting. Creates unresolved tension. Does NOT solve the problem. Goal: visibility and resonance.
+MOFU: Trust-building and positioning layer. Explains HOW you solve the problem. Shows thinking and differentiation. Light CTA.
+BOFU: Decision layer. Reduces hesitation. Shows proof, social proof, objection handling. Clear CTA.
+
+STRONG HOOKS: Identity-based, emotion-forward, slightly confronting, specific behavior call-out, You think X but Y, POV-led, enemy hooks, client language hooks.
+WEAK HOOKS: Vague values, symptom talk, empty encouragement, generic tips, overcomplicated language.
+
+BRAND PILLARS:
+- Identity and Leadership
+- Femininity, Womanhood, Relationships
+- Fashion and Style
+- Business Tactics: sales, content, marketing, systems
+- Workflow, Self-management, Fitness, Self-care
+
+AUTHORITY LANGUAGE RULES:
+- Name the BEHAVIOR not the value
+- Expose the LOOP
+- Name the HIDDEN COST
+- Position as guide not superior
+
+CONTENT QUALITY MARKERS:
+- Does it make someone feel seen AND slightly exposed?
+- Does it leave tension unresolved (TOFU) or resolve it with proof/process (MOFU/BOFU)?
+- Does it repel the wrong person and attract the right one?
+- Is it nice-girl energy or does it take a clear stance?
+- Is it simple enough that a 10-year-old could understand it?
+
+For CAROUSEL content also evaluate:
+- Does each slide earn the next swipe?
+- Is there a clear journey from hook slide to CTA?
+- Is the hook slide strong enough to stop the scroll?
+
+OUTPUT FORMAT:
+Return ONLY valid JSON with no markdown, no backticks, no preamble:
+{
+  "funnelPlacement": { "label": "TOFU or MOFU or BOFU or UNCLEAR", "confidence": "strong or moderate or weak", "explanation": "2-3 sentences" },
+  "overallScore": { "score": 7, "verdict": "one punchy sentence" },
+  "hookStrength": { "rating": "strong or moderate or weak", "feedback": "specific feedback", "rewrite": "rewritten hook" },
+  "messagingClarity": { "rating": "strong or moderate or weak", "feedback": "feedback", "behaviorNamed": true, "loopExposed": false, "costNamed": true },
+  "brandPillar": { "pillar": "pillar name", "alignment": "strong or moderate or off" },
+  "tensionResolution": { "rating": "appropriate or too resolved or needs more tension or missing", "feedback": "feedback" },
+  "energyCheck": { "rating": "authority or nice-girl or mixed", "feedback": "feedback" },
+  "topWins": ["win 1", "win 2"],
+  "topFixes": ["fix 1", "fix 2", "fix 3"],
+  "captionRewrite": "full rewritten caption using DDM principles",
+  "ddmTip": "one specific DDM principle to apply going forward"
+}
+
+Be direct and use Kendall's voice. Be honest about weak content. Reference the client's niche and avatar in your feedback.`;
+
+let images = [];
+
+// File input handler
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  Array.from(e.target.files).forEach(f => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : (f.type || 'image/jpeg');
+      const base64 = dataUrl.split(',')[1];
+      images.push({ data: base64, mimeType, preview: dataUrl, name: f.name });
+      renderThumbs();
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = '';
+});
+
+function renderThumbs() {
+  const zone = document.getElementById('upload-zone');
+  const area = document.getElementById('thumb-area');
+  const wrap = document.getElementById('thumbs-wrap');
+  const count = document.getElementById('thumb-count');
+  if (images.length === 0) {
+    zone.classList.remove('hidden');
+    area.classList.add('hidden');
+    return;
+  }
+  zone.classList.add('hidden');
+  area.classList.remove('hidden');
+  count.textContent = images.length + (images.length === 1 ? ' image uploaded' : ' slides uploaded');
+  wrap.innerHTML = '';
+  images.forEach((img, i) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.innerHTML = `<img src="${img.preview}" alt="slide ${i+1}" /><div class="thumb-label">${images.length > 1 ? 'S'+(i+1) : 'IMG'}</div><button class="thumb-remove" onclick="removeImage(${i})">✕</button>`;
+    wrap.appendChild(d);
+  });
+  const addBtn = document.createElement('div');
+  addBtn.className = 'thumb-add';
+  addBtn.textContent = '+';
+  addBtn.onclick = () => document.getElementById('fileInput').click();
+  wrap.appendChild(addBtn);
+}
+
+function removeImage(idx) {
+  images.splice(idx, 1);
+  renderThumbs();
+}
+
+function showScreen(name) {
+  ['intake','upload','analysing','results'].forEach(s => {
+    document.getElementById('screen-'+s).classList.add('hidden');
+  });
+  document.getElementById('screen-'+name).classList.remove('hidden');
+  updateSteps(name);
+}
+
+function updateSteps(screen) {
+  const order = ['intake', 'upload', 'analysing', 'results'];
+  const stepMap = { intake: 0, upload: 1, analysing: 1, results: 2 };
+  const current = stepMap[screen];
+  for (let i = 0; i < 3; i++) {
+    const circle = document.getElementById('sc'+i);
+    const label = document.getElementById('sl'+i);
+    const line = document.getElementById('line'+i);
+    circle.className = 'step-circle';
+    label.className = 'step-label';
+    if (line) line.className = 'step-line';
+    if (i < current) {
+      circle.classList.add('done');
+      circle.textContent = '✓';
+      label.classList.add('done');
+      if (line) line.classList.add('done');
+    } else if (i === current) {
+      circle.classList.add('active');
+      circle.textContent = i + 1;
+      label.classList.add('active');
+    } else {
+      circle.textContent = i + 1;
+    }
+  }
+}
+
+function goToUpload() { showScreen('upload'); }
+function goToIntake() { showScreen('intake'); }
+
+function ratingColor(r) {
+  if (['strong','authority','appropriate'].includes(r)) return 'var(--green)';
+  if (['moderate','mixed'].includes(r)) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function funnelColor(l) {
+  if (l === 'TOFU') return 'var(--orange)';
+  if (l === 'MOFU') return 'var(--orange-light)';
+  if (l === 'BOFU') return '#fbbf24';
+  return 'var(--muted)';
+}
+
+function badge(label, color) {
+  return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}55">${label}</span>`;
+}
+
+function scoreSVG(score) {
+  const color = score >= 8 ? 'var(--green)' : score >= 6 ? 'var(--amber)' : 'var(--red)';
+  const dash = (score / 10) * 188.5;
+  return `<div class="score-wrap">
+    <div style="position:relative;width:72px;height:72px">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="30" fill="none" stroke="var(--border)" stroke-width="8"/>
+        <circle cx="36" cy="36" r="30" fill="none" stroke="${color}" stroke-width="8"
+          stroke-dasharray="${dash} 188.5" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:${color};font-family:'Syne',sans-serif">${score}</div>
+    </div>
+    <div class="score-of">/ 10</div>
+  </div>`;
+}
+
+function checkRow(label, value) {
+  const color = value ? 'var(--green)' : 'var(--red)';
+  return `<div class="check-row">
+    <div class="check-box" style="background:${color}22;border:1px solid ${color};color:${color}">${value ? '✓' : '✗'}</div>
+    <span class="check-label">${label}</span>
+  </div>`;
+}
+
+function renderResults(r) {
+  const wrap = document.getElementById('results-wrap');
+  const fc = funnelColor(r.funnelPlacement?.label);
+
+  wrap.innerHTML = `
+    <!-- Overall -->
+    <div class="card">
+      <div class="overall-row">
+        <div>
+          <div class="section-title">Overall Score</div>
+          ${scoreSVG(r.overallScore?.score)}
+          <div class="score-verdict">"${r.overallScore?.verdict}"</div>
+        </div>
+        <div class="funnel-right">
+          <div class="section-title">Funnel Placement</div>
+          <div class="funnel-badges">
+            ${badge(r.funnelPlacement?.label, fc)}
+            ${badge((r.funnelPlacement?.confidence || '') + ' match', 'var(--muted)')}
+          </div>
+          <div class="funnel-explanation">${r.funnelPlacement?.explanation || ''}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hook + Messaging -->
+    <div class="grid2">
+      <div class="card">
+        <div class="section-title">Hook Strength</div>
+        ${badge(r.hookStrength?.rating, ratingColor(r.hookStrength?.rating))}
+        <p class="card-desc">${r.hookStrength?.feedback || ''}</p>
+        ${r.hookStrength?.rewrite ? `<div class="rewrite-box"><div class="rewrite-label">Rewrite</div><div class="rewrite-text">${r.hookStrength.rewrite}</div></div>` : ''}
+      </div>
+      <div class="card">
+        <div class="section-title">Messaging Clarity</div>
+        ${badge(r.messagingClarity?.rating, ratingColor(r.messagingClarity?.rating))}
+        <div style="margin-top:12px">
+          ${checkRow('Behavior named', r.messagingClarity?.behaviorNamed)}
+          ${checkRow('Loop exposed', r.messagingClarity?.loopExposed)}
+          ${checkRow('Cost named', r.messagingClarity?.costNamed)}
+        </div>
+        <p class="card-desc">${r.messagingClarity?.feedback || ''}</p>
+      </div>
+    </div>
+
+    <!-- Energy, Tension, Pillar -->
+    <div class="grid3">
+      <div class="card">
+        <div class="section-title">Energy Check</div>
+        ${badge(r.energyCheck?.rating, ratingColor(r.energyCheck?.rating))}
+        <p class="card-desc-sm">${r.energyCheck?.feedback || ''}</p>
+      </div>
+      <div class="card">
+        <div class="section-title">Tension</div>
+        ${badge(r.tensionResolution?.rating, ratingColor(r.tensionResolution?.rating === 'appropriate' ? 'appropriate' : 'weak'))}
+        <p class="card-desc-sm">${r.tensionResolution?.feedback || ''}</p>
+      </div>
+      <div class="card">
+        <div class="section-title">Brand Pillar</div>
+        ${badge(r.brandPillar?.alignment, ratingColor(r.brandPillar?.alignment))}
+        <p class="card-desc-sm">${r.brandPillar?.pillar || ''}</p>
+      </div>
+    </div>
+
+    <!-- Wins + Fixes -->
+    <div class="grid2">
+      <div class="card">
+        <div class="section-title">✅ What's Working</div>
+        ${(r.topWins || []).map(w => `<div class="list-item"><span class="list-icon" style="color:var(--green)">✓</span><span class="list-text">${w}</span></div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="section-title">⚡ Fix These</div>
+        ${(r.topFixes || []).map(f => `<div class="list-item"><span class="list-icon" style="color:var(--orange)">→</span><span class="list-text">${f}</span></div>`).join('')}
+      </div>
+    </div>
+
+    ${r.captionRewrite ? `<div class="card orange-glow"><div class="section-title">✍️ DDM Rewrite</div><div class="caption-text">${r.captionRewrite}</div></div>` : ''}
+
+    ${r.ddmTip ? `<div class="card" style="background:rgba(249,115,22,0.05);border-color:rgba(249,115,22,0.2)"><div class="tip-row"><div class="tip-icon">💡</div><div><div class="tip-label">DDM Principle</div><div class="tip-text">${r.ddmTip}</div></div></div></div>` : ''}
+
+    <button class="btn-outline" onclick="reset()">← Analyse Another Piece</button>
+  `;
+}
+
+async function analyse() {
+  const content = document.getElementById('content').value;
+  const errEl = document.getElementById('upload-error');
+  if (!content.trim() && images.length === 0) {
+    errEl.textContent = 'Please add content to analyse.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+  showScreen('analysing');
+
+  const niche = document.getElementById('niche').value;
+  const avatar = document.getElementById('avatar').value;
+  const fmt = images.length > 1 ? `Carousel (${images.length} slides)` : images.length === 1 ? 'Single image' : 'Text only';
+
+  const contextText = [
+    'COACH CONTEXT:',
+    'Niche: ' + (niche || 'Not specified'),
+    'Avatar: ' + (avatar || 'Not specified'),
+    'Format: ' + fmt,
+    '',
+    'CONTENT TO ANALYSE:',
+    content || '[Visual content only]'
+  ].join('\n');
+
+  const msgContent = [];
+  images.forEach((img, i) => {
+    if (images.length > 1) msgContent.push({ type: 'text', text: `Slide ${i+1} of ${images.length}:` });
+    msgContent.push({ type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.data } });
+  });
+  msgContent.push({ type: 'text', text: contextText });
+
+  const messages = [{ role: 'user', content: msgContent.length > 1 ? msgContent : [{ type: 'text', text: contextText }] }];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1800, system: SYSTEM_PROMPT, messages })
+    });
+    const data = await res.json();
+    if (data.error) {
+      showScreen('upload');
+      document.getElementById('upload-error').textContent = 'API error: ' + data.error.message;
+      document.getElementById('upload-error').classList.remove('hidden');
+      return;
+    }
+    const raw = data.content?.find(b => b.type === 'text')?.text || '';
+    if (!raw) {
+      showScreen('upload');
+      document.getElementById('upload-error').textContent = 'No response from API.';
+      document.getElementById('upload-error').classList.remove('hidden');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      renderResults(parsed);
+      showScreen('results');
+    } catch(pe) {
+      showScreen('upload');
+      document.getElementById('upload-error').textContent = 'Could not parse response. Try again.';
+      document.getElementById('upload-error').classList.remove('hidden');
+    }
+  } catch(e) {
+    showScreen('upload');
+    document.getElementById('upload-error').textContent = 'Request failed: ' + e.message;
+    document.getElementById('upload-error').classList.remove('hidden');
+  }
+}
+
+function reset() {
+  images = [];
+  document.getElementById('niche').value = '';
+  document.getElementById('avatar').value = '';
+  document.getElementById('content').value = '';
+  document.getElementById('upload-error').classList.add('hidden');
+  document.getElementById('upload-zone').classList.remove('hidden');
+  document.getElementById('thumb-area').classList.add('hidden');
+  document.getElementById('thumbs-wrap').innerHTML = '';
+  document.getElementById('results-wrap').innerHTML = '';
+  showScreen('intake');
+}
+
+// Init
+showScreen('intake');
+</script>
+</body>
+</html>
